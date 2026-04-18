@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Saved Submit Data</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <h1>Saved Submit Data</h1>
+      <p id="status" class="status">Waiting for a captured submit...</p>
+      <section class="card">
+        <div class="meta" id="meta"></div>
+        <dl class="details" id="details">
+          <div class="detail-row">
+            <dt>Patient Name</dt>
+            <dd id="patientName">Not available</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Patient ID</dt>
+            <dd id="patientId">Not available</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Follow-up Days</dt>
+            <dd id="selectedDays">Not available</dd>
+          </div>
+          <div class="detail-row">
+            <dt>Captured Time</dt>
+            <dd id="capturedAt">Not available</dd>
+          </div>
+          <div class="detail-row detail-row-wide">
+            <dt>Page</dt>
+            <dd id="pageTitle">Not available</dd>
+          </div>
+          <div class="detail-row detail-row-wide">
+            <dt>URL</dt>
+            <dd id="pageUrl">Not available</dd>
+          </div>
+        </dl>
+      </section>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
