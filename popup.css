@@ -4,72 +4,101 @@
 
 body {
   margin: 0;
-  min-width: 360px;
-  background: linear-gradient(160deg, #f6efe4 0%, #e3efe8 100%);
-  color: #18261f;
+  min-width: 380px;
+  background:
+    radial-gradient(circle at top, rgba(245, 197, 66, 0.35), transparent 38%),
+    linear-gradient(180deg, #f7f2e7 0%, #dbe8dd 100%);
+  color: #1d2a22;
   font-family: Georgia, "Times New Roman", serif;
 }
 
 .popup {
-  padding: 16px;
+  padding: 18px;
+}
+
+.hero {
+  margin-bottom: 14px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5d6d61;
 }
 
 h1 {
-  margin: 0 0 8px;
-  font-size: 20px;
+  margin: 0 0 6px;
+  font-size: 24px;
+  line-height: 1.1;
 }
 
 .status {
-  margin: 0 0 12px;
-  color: #355448;
+  margin: 0;
+  color: #345145;
   font-size: 14px;
 }
 
 .card {
-  border: 1px solid rgba(24, 38, 31, 0.12);
-  border-radius: 14px;
+  border: 1px solid rgba(29, 42, 34, 0.12);
+  border-radius: 18px;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(6px);
-  box-shadow: 0 10px 24px rgba(24, 38, 31, 0.08);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 16px 34px rgba(29, 42, 34, 0.1);
+  backdrop-filter: blur(10px);
 }
 
 .meta {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   font-size: 12px;
-  color: #4b6257;
+  color: #55695c;
   font-weight: 600;
 }
 
-.details {
+.empty-state {
   margin: 0;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(219, 232, 221, 0.75);
+  color: #486055;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.entry-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: grid;
   gap: 10px;
 }
 
-.detail-row {
-  display: grid;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(227, 239, 232, 0.65);
+.entry-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(219, 232, 221, 0.9), rgba(247, 242, 231, 0.95));
+  border: 1px solid rgba(52, 81, 69, 0.08);
 }
 
-.detail-row-wide {
-  background: rgba(246, 239, 228, 0.8);
+.entry-title {
+  margin-bottom: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1d2a22;
 }
 
-dt {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #587064;
+.entry-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: #466051;
 }
 
-dd {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.45;
-  color: #18261f;
-  word-break: break-word;
+.entry-details span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
 }

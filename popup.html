@@ -8,36 +8,17 @@
   </head>
   <body>
     <main class="popup">
-      <h1>Saved Submit Data</h1>
-      <p id="status" class="status">Waiting for a captured submit...</p>
+      <div class="hero">
+        <p class="eyebrow">Prescription Submit Capture</p>
+        <h1>Saved Patients</h1>
+        <p id="status" class="status">Waiting for the first captured submit...</p>
+      </div>
       <section class="card">
         <div class="meta" id="meta"></div>
-        <dl class="details" id="details">
-          <div class="detail-row">
-            <dt>Patient Name</dt>
-            <dd id="patientName">Not available</dd>
-          </div>
-          <div class="detail-row">
-            <dt>Patient ID</dt>
-            <dd id="patientId">Not available</dd>
-          </div>
-          <div class="detail-row">
-            <dt>Follow-up Days</dt>
-            <dd id="selectedDays">Not available</dd>
-          </div>
-          <div class="detail-row">
-            <dt>Captured Time</dt>
-            <dd id="capturedAt">Not available</dd>
-          </div>
-          <div class="detail-row detail-row-wide">
-            <dt>Page</dt>
-            <dd id="pageTitle">Not available</dd>
-          </div>
-          <div class="detail-row detail-row-wide">
-            <dt>URL</dt>
-            <dd id="pageUrl">Not available</dd>
-          </div>
-        </dl>
+        <p id="emptyState" class="empty-state">
+          Click the submit button on the target page and the patient list will appear here.
+        </p>
+        <ol class="entry-list" id="entryList"></ol>
       </section>
     </main>
     <script src="popup.js"></script>

@@ -1,72 +1,81 @@
 const statusEl = document.getElementById("status");
 const metaEl = document.getElementById("meta");
-const patientNameEl = document.getElementById("patientName");
-const patientIdEl = document.getElementById("patientId");
-const selectedDaysEl = document.getElementById("selectedDays");
-const capturedAtEl = document.getElementById("capturedAt");
-const pageTitleEl = document.getElementById("pageTitle");
-const pageUrlEl = document.getElementById("pageUrl");
+const entryListEl = document.getElementById("entryList");
+const emptyStateEl = document.getElementById("emptyState");
 const popupStorage =
   typeof globalThis.chrome !== "undefined" ? globalThis.chrome?.storage?.local ?? null : null;
 
 function readPopupFallback() {
   try {
-    const latestSubmission = localStorage.getItem("latestSubmission");
     const submissionHistory = localStorage.getItem("submissionHistory");
 
     return {
-      latestSubmission: latestSubmission ? JSON.parse(latestSubmission) : null,
       submissionHistory: submissionHistory ? JSON.parse(submissionHistory) : []
     };
   } catch (error) {
     console.warn("Prescription Submit Capture: popup localStorage read failed.", error);
     return {
-      latestSubmission: null,
       submissionHistory: []
     };
   }
 }
 
-function setField(element, value, fallback = "Not available") {
-  element.textContent = value || fallback;
+function createEntryItem(submission, index) {
+  const item = document.createElement("li");
+  item.className = "entry-item";
+
+  const title = document.createElement("div");
+  title.className = "entry-title";
+  title.textContent = submission.patientName || "Unknown patient";
+
+  const detailRow = document.createElement("div");
+  detailRow.className = "entry-details";
+
+  const patientId = document.createElement("span");
+  patientId.textContent = submission.patientId || "No patient ID";
+
+  const days = document.createElement("span");
+  days.textContent = submission.selectedDays
+    ? `${submission.selectedDays} day(s)`
+    : "No days selected";
+
+  const order = document.createElement("span");
+  order.textContent = `#${index + 1}`;
+
+  detailRow.append(patientId, days, order);
+  item.append(title, detailRow);
+
+  return item;
 }
 
-function renderSubmission(submission, historyLength) {
-  if (!submission) {
-    statusEl.textContent = "Waiting for a captured submit...";
+function renderSubmissionList(submissionHistory) {
+  entryListEl.replaceChildren();
+
+  if (!submissionHistory.length) {
+    statusEl.textContent = "Waiting for the first captured submit...";
     metaEl.textContent = "";
-    setField(patientNameEl, null);
-    setField(patientIdEl, null);
-    setField(selectedDaysEl, null);
-    setField(capturedAtEl, null);
-    setField(pageTitleEl, null);
-    setField(pageUrlEl, null);
+    emptyStateEl.hidden = false;
     return;
   }
 
-  statusEl.textContent = "Latest submit captured successfully.";
-  metaEl.textContent = `${historyLength} entr${historyLength === 1 ? "y" : "ies"} saved`;
-  setField(patientNameEl, submission.patientName);
-  setField(patientIdEl, submission.patientId);
-  setField(
-    selectedDaysEl,
-    submission.selectedDays ? `${submission.selectedDays} day(s)` : null
-  );
-  setField(
-    capturedAtEl,
-    submission.capturedAt ? new Date(submission.capturedAt).toLocaleString() : null
-  );
-  setField(pageTitleEl, submission.pageTitle);
-  setField(pageUrlEl, submission.url);
+  statusEl.textContent = "Recent submissions";
+  metaEl.textContent = `${submissionHistory.length} entr${
+    submissionHistory.length === 1 ? "y" : "ies"
+  } saved`;
+  emptyStateEl.hidden = true;
+
+  submissionHistory.forEach((submission, index) => {
+    entryListEl.append(createEntryItem(submission, index));
+  });
 }
 
-async function loadSubmission() {
+async function loadSubmissionList() {
   const stored = popupStorage
-    ? await popupStorage.get(["latestSubmission", "submissionHistory"])
+    ? await popupStorage.get(["submissionHistory"])
     : readPopupFallback();
-  const { latestSubmission = null, submissionHistory = [] } = stored;
+  const { submissionHistory = [] } = stored;
 
-  renderSubmission(latestSubmission, submissionHistory.length);
+  renderSubmissionList(submissionHistory);
 }
 
 if (popupStorage && globalThis.chrome?.storage?.onChanged) {
@@ -75,10 +84,10 @@ if (popupStorage && globalThis.chrome?.storage?.onChanged) {
       return;
     }
 
-    if (changes.latestSubmission || changes.submissionHistory) {
-      loadSubmission();
+    if (changes.submissionHistory) {
+      loadSubmissionList();
     }
   });
 }
 
-loadSubmission();
+loadSubmissionList();

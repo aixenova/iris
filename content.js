@@ -1,6 +1,5 @@
-const GOOGLE_SHEET_WEB_APP_URL =
-  "https://script.google.com/macros/s/AKfycbzokan4HCIV1ijPDk0-dGoY5oebIjbrCTJhhpFfXPgaEBQmKGiLo0MYU02EsGcZdTfR/exec";
-const STORAGE_KEYS = ["latestSubmission", "submissionHistory"];
+const STORAGE_KEYS = ["submissionHistory"];
+const MAX_HISTORY_SIZE = 50;
 const extensionStorage =
   typeof globalThis.chrome !== "undefined" ? globalThis.chrome?.storage?.local ?? null : null;
 
@@ -35,10 +34,7 @@ function getSubmissionPayload() {
   return {
     patientId: extractLabeledValue(cells[0].innerText),
     patientName: extractLabeledValue(cells[1].innerText),
-    selectedDays: dropdown ? dropdown.value : null,
-    pageTitle: document.title,
-    url: window.location.href,
-    capturedAt: new Date().toISOString()
+    selectedDays: dropdown ? dropdown.value : null
   };
 }
 
@@ -48,17 +44,14 @@ function hasChromeStorage() {
 
 function readLocalFallback() {
   try {
-    const latestSubmission = localStorage.getItem("latestSubmission");
     const submissionHistory = localStorage.getItem("submissionHistory");
 
     return {
-      latestSubmission: latestSubmission ? JSON.parse(latestSubmission) : null,
       submissionHistory: submissionHistory ? JSON.parse(submissionHistory) : []
     };
   } catch (error) {
     console.warn("Prescription Submit Capture: localStorage read failed.", error);
     return {
-      latestSubmission: null,
       submissionHistory: []
     };
   }
@@ -79,7 +72,6 @@ async function saveStoredSubmissions(data) {
   }
 
   try {
-    localStorage.setItem("latestSubmission", JSON.stringify(data.latestSubmission));
     localStorage.setItem("submissionHistory", JSON.stringify(data.submissionHistory));
   } catch (error) {
     console.warn("Prescription Submit Capture: localStorage write failed.", error);
@@ -88,37 +80,11 @@ async function saveStoredSubmissions(data) {
 
 async function storeSubmission(payload) {
   const { submissionHistory = [] } = await getStoredSubmissions();
-  const updatedHistory = [payload, ...submissionHistory].slice(0, 20);
+  const updatedHistory = [payload, ...submissionHistory].slice(0, MAX_HISTORY_SIZE);
 
   await saveStoredSubmissions({
-    latestSubmission: payload,
     submissionHistory: updatedHistory
   });
-}
-
-function formatCurrentDate() {
-  return new Date().toLocaleDateString("en-GB");
-}
-
-async function sendToGoogleSheet(payload) {
-  const sheetPayload = {
-    patientName: payload.patientName,
-    patientId: payload.patientId,
-    day: payload.selectedDays,
-    currentDate: formatCurrentDate()
-  };
-
-  const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "text/plain;charset=utf-8"
-    },
-    body: JSON.stringify(sheetPayload)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Google Sheet request failed with status ${response.status}`);
-  }
 }
 
 function isInvalidatedExtensionContext(error) {
@@ -127,6 +93,21 @@ function isInvalidatedExtensionContext(error) {
     typeof error.message === "string" &&
     error.message.includes("Extension context invalidated")
   );
+}
+
+async function sendSubmissionToBackground(payload) {
+  if (!globalThis.chrome?.runtime?.sendMessage) {
+    return;
+  }
+
+  const response = await globalThis.chrome.runtime.sendMessage({
+    type: "appendSubmissionToSheet",
+    payload
+  });
+
+  if (!response?.ok) {
+    throw new Error(response?.error || "Unknown sheet sync error.");
+  }
 }
 
 document.addEventListener("click", async (event) => {
@@ -148,7 +129,7 @@ document.addEventListener("click", async (event) => {
 
   try {
     await storeSubmission(payload);
-    await sendToGoogleSheet(payload);
+    await sendSubmissionToBackground(payload);
   } catch (error) {
     if (isInvalidatedExtensionContext(error)) {
       console.warn(

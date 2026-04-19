@@ -5,6 +5,9 @@
   "description": "Stores submit values from the page and shows the latest captured payload.",
   "permissions": ["storage"],
   "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
