@@ -102,3 +102,71 @@ h1 {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
 }
+
+.sync-pill {
+  display: inline-flex;
+  margin-top: 10px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sync-pill-success {
+  background: rgba(58, 141, 94, 0.14);
+  color: #2d6c47;
+}
+
+.sync-pill-error {
+  background: rgba(176, 63, 63, 0.14);
+  color: #8c2d2d;
+}
+
+.sync-pill-pending {
+  background: rgba(168, 122, 23, 0.16);
+  color: #845c14;
+}
+
+.entry-response {
+  margin-top: 10px;
+  border-top: 1px solid rgba(52, 81, 69, 0.12);
+  padding-top: 10px;
+}
+
+.entry-response summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: #355448;
+  list-style: none;
+}
+
+.entry-response summary::-webkit-details-marker {
+  display: none;
+}
+
+.entry-response summary::before {
+  content: "+";
+  display: inline-block;
+  width: 14px;
+  margin-right: 6px;
+}
+
+.entry-response[open] summary::before {
+  content: "-";
+}
+
+.response-code {
+  margin: 10px 0 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(29, 42, 34, 0.9);
+  color: #eef6f0;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

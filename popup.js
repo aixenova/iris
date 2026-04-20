@@ -42,8 +42,37 @@ function createEntryItem(submission, index) {
   const order = document.createElement("span");
   order.textContent = `#${index + 1}`;
 
+  const syncState = document.createElement("span");
+  syncState.className = `sync-pill sync-pill-${submission.sheetSync?.status || "pending"}`;
+  syncState.textContent =
+    submission.sheetSync?.status === "success"
+      ? "Sheet synced"
+      : submission.sheetSync?.status === "error"
+        ? "Sheet error"
+        : "Sheet pending";
+
   detailRow.append(patientId, days, order);
-  item.append(title, detailRow);
+  item.append(title, detailRow, syncState);
+
+  const responseToggle = document.createElement("details");
+  responseToggle.className = "entry-response";
+
+  const responseSummary = document.createElement("summary");
+  responseSummary.textContent = "View Google Sheet response";
+
+  const responsePre = document.createElement("pre");
+  responsePre.className = "response-code";
+  responsePre.textContent = JSON.stringify(
+    submission.sheetSync?.response || {
+      status: submission.sheetSync?.status || "pending",
+      message: "Waiting for a Google Sheet response."
+    },
+    null,
+    2
+  );
+
+  responseToggle.append(responseSummary, responsePre);
+  item.append(responseToggle);
 
   return item;
 }

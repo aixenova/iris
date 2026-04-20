@@ -3,6 +3,10 @@ const MAX_HISTORY_SIZE = 50;
 const extensionStorage =
   typeof globalThis.chrome !== "undefined" ? globalThis.chrome?.storage?.local ?? null : null;
 
+function createSubmissionId() {
+  return `submission-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 function extractLabeledValue(text) {
   if (!text) {
     return null;
@@ -32,59 +36,15 @@ function getSubmissionPayload() {
   }
 
   return {
+    id: createSubmissionId(),
     patientId: extractLabeledValue(cells[0].innerText),
     patientName: extractLabeledValue(cells[1].innerText),
-    selectedDays: dropdown ? dropdown.value : null
+    selectedDays: dropdown ? dropdown.value : null,
+    sheetSync: {
+      status: "pending",
+      response: null
+    }
   };
-}
-
-function hasChromeStorage() {
-  return Boolean(extensionStorage);
-}
-
-function readLocalFallback() {
-  try {
-    const submissionHistory = localStorage.getItem("submissionHistory");
-
-    return {
-      submissionHistory: submissionHistory ? JSON.parse(submissionHistory) : []
-    };
-  } catch (error) {
-    console.warn("Prescription Submit Capture: localStorage read failed.", error);
-    return {
-      submissionHistory: []
-    };
-  }
-}
-
-async function getStoredSubmissions() {
-  if (hasChromeStorage()) {
-    return extensionStorage.get(STORAGE_KEYS);
-  }
-
-  return readLocalFallback();
-}
-
-async function saveStoredSubmissions(data) {
-  if (hasChromeStorage()) {
-    await extensionStorage.set(data);
-    return;
-  }
-
-  try {
-    localStorage.setItem("submissionHistory", JSON.stringify(data.submissionHistory));
-  } catch (error) {
-    console.warn("Prescription Submit Capture: localStorage write failed.", error);
-  }
-}
-
-async function storeSubmission(payload) {
-  const { submissionHistory = [] } = await getStoredSubmissions();
-  const updatedHistory = [payload, ...submissionHistory].slice(0, MAX_HISTORY_SIZE);
-
-  await saveStoredSubmissions({
-    submissionHistory: updatedHistory
-  });
 }
 
 function isInvalidatedExtensionContext(error) {
@@ -95,19 +55,44 @@ function isInvalidatedExtensionContext(error) {
   );
 }
 
-async function sendSubmissionToBackground(payload) {
+async function getStoredSubmissions() {
+  if (extensionStorage) {
+    return extensionStorage.get(STORAGE_KEYS);
+  }
+
+  return { submissionHistory: [] };
+}
+
+async function saveStoredSubmissions(data) {
+  if (!extensionStorage) {
+    return;
+  }
+
+  await extensionStorage.set(data);
+}
+
+async function storePendingSubmission(payload) {
+  const { submissionHistory = [] } = await getStoredSubmissions();
+  const withoutDuplicate = submissionHistory.filter((submission) => submission.id !== payload.id);
+  const updatedHistory = [payload, ...withoutDuplicate].slice(0, MAX_HISTORY_SIZE);
+
+  await saveStoredSubmissions({
+    submissionHistory: updatedHistory
+  });
+}
+
+function requestBackgroundSync() {
   if (!globalThis.chrome?.runtime?.sendMessage) {
     return;
   }
 
-  const response = await globalThis.chrome.runtime.sendMessage({
-    type: "appendSubmissionToSheet",
-    payload
+  globalThis.chrome.runtime.sendMessage({
+    type: "syncPendingSubmissions"
+  }).catch((error) => {
+    if (!isInvalidatedExtensionContext(error)) {
+      console.warn("Prescription Submit Capture: failed to request background sync.", error);
+    }
   });
-
-  if (!response?.ok) {
-    throw new Error(response?.error || "Unknown sheet sync error.");
-  }
 }
 
 document.addEventListener("click", async (event) => {
@@ -128,8 +113,8 @@ document.addEventListener("click", async (event) => {
   console.log("Prescription Submit Capture:", payload);
 
   try {
-    await storeSubmission(payload);
-    await sendSubmissionToBackground(payload);
+    await storePendingSubmission(payload);
+    requestBackgroundSync();
   } catch (error) {
     if (isInvalidatedExtensionContext(error)) {
       console.warn(
