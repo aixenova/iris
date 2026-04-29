@@ -2,6 +2,7 @@ const STORAGE_KEYS = ["submissionHistory"];
 const MAX_HISTORY_SIZE = 50;
 const extensionStorage =
   typeof globalThis.chrome !== "undefined" ? globalThis.chrome?.storage?.local ?? null : null;
+const sentSubmissionKeys = new Set();
 
 function createSubmissionId() {
   return `submission-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -81,40 +82,47 @@ async function storePendingSubmission(payload) {
   });
 }
 
-function requestBackgroundSync() {
-  if (!globalThis.chrome?.runtime?.sendMessage) {
-    return;
+function getSubmissionKey(payload) {
+  return [payload.patientId || "", payload.patientName || "", payload.selectedDays || ""].join("|");
+}
+
+function isDuplicateRecentSubmission(payload) {
+  const submissionKey = getSubmissionKey(payload);
+
+  if (sentSubmissionKeys.has(submissionKey)) {
+    return true;
   }
 
-  globalThis.chrome.runtime.sendMessage({
-    type: "syncPendingSubmissions"
-  }).catch((error) => {
-    if (!isInvalidatedExtensionContext(error)) {
-      console.warn("Prescription Submit Capture: failed to request background sync.", error);
-    }
+  sentSubmissionKeys.add(submissionKey);
+  setTimeout(() => {
+    sentSubmissionKeys.delete(submissionKey);
+  }, 3_000);
+
+  return false;
+}
+
+function sendSubmissionToBackground(payload) {
+  if (!globalThis.chrome?.runtime?.sendMessage) {
+    return Promise.resolve({ ok: false, error: "Chrome runtime messaging is unavailable." });
+  }
+
+  return globalThis.chrome.runtime.sendMessage({
+    type: "captureSubmission",
+    payload
   });
 }
 
-document.addEventListener("click", async (event) => {
-  const submitButton =
-    event.target instanceof Element
-      ? event.target.closest("#psyHomedosePrescription")
-      : null;
-
-  if (!submitButton) {
-    return;
-  }
-
+async function captureSubmission() {
   const payload = getSubmissionPayload();
-  if (!payload) {
+
+  if (!payload || isDuplicateRecentSubmission(payload)) {
     return;
   }
 
   console.log("Prescription Submit Capture:", payload);
 
   try {
-    await storePendingSubmission(payload);
-    requestBackgroundSync();
+    await sendSubmissionToBackground(payload);
   } catch (error) {
     if (isInvalidatedExtensionContext(error)) {
       console.warn(
@@ -123,6 +131,58 @@ document.addEventListener("click", async (event) => {
       return;
     }
 
-    console.error("Prescription Submit Capture: failed during submit handling.", error);
+    console.warn(
+      "Prescription Submit Capture: background capture failed; saving pending submission locally.",
+      error
+    );
+
+    try {
+      await storePendingSubmission(payload);
+    } catch (storageError) {
+      console.error("Prescription Submit Capture: failed during submit handling.", storageError);
+    }
   }
+}
+
+document.addEventListener(
+  "click",
+  (event) => {
+    const submitButton =
+      event.target instanceof Element
+        ? event.target.closest("#psyHomedosePrescription")
+        : null;
+
+    if (!submitButton) {
+      return;
+    }
+
+    void captureSubmission();
+  },
+  true
+);
+
+document.addEventListener(
+  "submit",
+  (event) => {
+    if (!(event.target instanceof HTMLFormElement)) {
+      return;
+    }
+
+    if (!event.target.querySelector("#psyHomedosePrescription")) {
+      return;
+    }
+
+    void captureSubmission();
+  },
+  true
+);
+
+globalThis.addEventListener("pagehide", () => {
+  const submitButton = document.activeElement?.closest?.("#psyHomedosePrescription");
+
+  if (!submitButton) {
+    return;
+  }
+
+  void captureSubmission();
 });

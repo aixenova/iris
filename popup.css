@@ -42,11 +42,113 @@ h1 {
 
 .card {
   border: 1px solid rgba(29, 42, 34, 0.12);
-  border-radius: 18px;
+  border-radius: 8px;
   padding: 14px;
   background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 16px 34px rgba(29, 42, 34, 0.1);
   backdrop-filter: blur(10px);
+}
+
+.settings-card {
+  margin-bottom: 12px;
+  border: 1px solid rgba(29, 42, 34, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.settings-summary {
+  cursor: pointer;
+  padding: 11px 12px;
+  color: #345145;
+  font-size: 13px;
+  font-weight: 700;
+  list-style: none;
+}
+
+.settings-summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-summary::before {
+  content: "+";
+  display: inline-block;
+  width: 14px;
+  margin-right: 6px;
+}
+
+.settings-card[open] .settings-summary::before {
+  content: "-";
+}
+
+.settings-body {
+  border-top: 1px solid rgba(52, 81, 69, 0.12);
+  padding: 12px;
+}
+
+.settings-warning {
+  margin: 0 0 10px;
+  border-left: 3px solid #a87a17;
+  padding: 8px 10px;
+  background: rgba(168, 122, 23, 0.12);
+  color: #70500f;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.settings-label {
+  display: block;
+  margin: 10px 0 8px;
+  color: #345145;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 68px;
+  gap: 8px;
+}
+
+.settings-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(52, 81, 69, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1d2a22;
+  font: 12px Arial, sans-serif;
+}
+
+.settings-button {
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background: #315847;
+  color: #ffffff;
+  cursor: pointer;
+  font: 700 12px Arial, sans-serif;
+}
+
+.settings-button:disabled {
+  cursor: progress;
+  opacity: 0.65;
+}
+
+.settings-status {
+  min-height: 16px;
+  margin: 8px 0 0;
+  color: #55695c;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.settings-status[data-status="success"] {
+  color: #2d6c47;
+}
+
+.settings-status[data-status="error"] {
+  color: #8c2d2d;
 }
 
 .meta {

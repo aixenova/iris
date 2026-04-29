@@ -22,6 +22,7 @@ The popup shows the saved entries in a list view, with the newest submission fir
 ## Configure Google Sheets Sync
 
 The sheet write now runs from the extension background service worker instead of the page script. This is more reliable for cross-origin requests.
+Pending sheet writes are rechecked when the popup opens and retried automatically in the background before they are marked as errors.
 
 ### 1. Create the sheet
 
@@ -29,7 +30,7 @@ The sheet write now runs from the extension background service worker instead of
 2. Rename the first sheet tab if you want, but keep note of its exact name
 3. Add these headers in row 1:
 
-`patientId | patientName | selectedDays | createdAt`
+`patientId | patientName | selectedDays | submissionId | createdAt`
 
 ### 2. Add the Apps Script
 
@@ -37,25 +38,78 @@ The sheet write now runs from the extension background service worker instead of
 2. Replace the default code with this:
 
 ```javascript
-function doPost(e) {
+const SPREADSHEET_ID = "1YKdgpu5w5SK_CxIZlHYx3hufCUp5wym7cvsvTZpTvVM";
+const SHEET_NAME = "Sheet1";
+
+function jsonResponse(payload) {
+  return ContentService
+    .createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  const lock = LockService.getScriptLock();
+  let locked = false;
+
   try {
-    const data = JSON.parse(e.postData.contents || "{}");
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
+    lock.waitLock(30000);
+    locked = true;
 
-    sheet.appendRow([
-      data.patientId || "",
-      data.patientName || "",
-      data.selectedDays || "",
-      new Date()
-    ]);
+    const spreadsheet = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = spreadsheet.getSheetByName(SHEET_NAME);
 
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: true }))
-      .setMimeType(ContentService.MimeType.JSON);
+    if (!sheet) {
+      throw new Error("Sheet not found: " + SHEET_NAME);
+    }
+
+    const patientId = e.parameter.patientId || "";
+    const patientName = e.parameter.patientName || "";
+    const selectedDays = e.parameter.selectedDays || "";
+    const submissionId = e.parameter.submissionId || "";
+
+    if (submissionId && sheet.getLastRow() > 1) {
+      const existingSubmissionIds = sheet
+        .getRange(2, 4, sheet.getLastRow() - 1, 1)
+        .getValues()
+        .flat();
+
+      if (existingSubmissionIds.includes(submissionId)) {
+        return jsonResponse({
+          ok: true,
+          duplicate: true,
+          submissionId
+        });
+      }
+    }
+
+    const createdAt = new Date();
+
+    sheet.insertRowAfter(1);
+    sheet.getRange(2, 1, 1, 5).setValues([[
+      patientId,
+      patientName,
+      selectedDays,
+      submissionId,
+      createdAt
+    ]]);
+
+    return jsonResponse({
+      ok: true,
+      patientId,
+      patientName,
+      selectedDays,
+      submissionId,
+      createdAt: createdAt.toISOString()
+    });
   } catch (error) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: false, error: String(error) }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return jsonResponse({
+      ok: false,
+      error: String(error)
+    });
+  } finally {
+    if (locked) {
+      lock.releaseLock();
+    }
   }
 }
 ```
@@ -71,18 +125,16 @@ function doPost(e) {
 
 Important: if you edit the Apps Script later, use `Deploy` -> `Manage deployments` and update the existing web app deployment, then copy the latest URL again if Google gives you a new one.
 
-### 4. Paste the web app URL into the extension
+### 4. Configure the web app URL in the extension
 
-1. Open [background.js](/Users/ayushganvir/Documents/iris-ext/iris/background.js)
-2. Replace the empty string in `GOOGLE_SHEET_WEB_APP_URL` with your deployed web app URL:
+The extension includes a default Google Sheet web app URL, and you can override it from the popup without editing code.
 
-```javascript
-const GOOGLE_SHEET_WEB_APP_URL = "https://script.google.com/macros/s/your-deployment-id/exec";
-```
-
-3. Save the file
-4. Go back to `chrome://extensions`
-5. Click `Reload` on the extension
+1. Click the extension icon
+2. Open `Settings`
+3. Paste your deployed Apps Script web app URL into `Google Sheet Web App URL`
+4. Enter the admin password
+5. Click `Save`
+6. Pending entries retry automatically with the saved URL
 
 ### 5. Test the sheet sync
 

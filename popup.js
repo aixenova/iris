@@ -2,6 +2,10 @@ const statusEl = document.getElementById("status");
 const metaEl = document.getElementById("meta");
 const entryListEl = document.getElementById("entryList");
 const emptyStateEl = document.getElementById("emptyState");
+const sheetUrlInputEl = document.getElementById("sheetUrlInput");
+const settingsPasswordInputEl = document.getElementById("settingsPasswordInput");
+const saveSheetUrlButtonEl = document.getElementById("saveSheetUrlButton");
+const settingsStatusEl = document.getElementById("settingsStatus");
 const popupStorage =
   typeof globalThis.chrome !== "undefined" ? globalThis.chrome?.storage?.local ?? null : null;
 
@@ -98,7 +102,72 @@ function renderSubmissionList(submissionHistory) {
   });
 }
 
+function setSettingsStatus(message, status = "neutral") {
+  settingsStatusEl.textContent = message;
+  settingsStatusEl.dataset.status = status;
+}
+
+async function sendRuntimeMessage(message) {
+  if (!globalThis.chrome?.runtime?.sendMessage) {
+    return { ok: false, error: "Chrome runtime messaging is unavailable." };
+  }
+
+  return globalThis.chrome.runtime.sendMessage(message);
+}
+
+async function loadSheetSettings() {
+  const response = await sendRuntimeMessage({
+    type: "getSheetSettings"
+  });
+
+  if (!response?.ok) {
+    setSettingsStatus(response?.error || "Could not load sheet settings.", "error");
+    return;
+  }
+
+  sheetUrlInputEl.value = response.googleSheetWebAppUrl || response.defaultGoogleSheetWebAppUrl || "";
+  setSettingsStatus("Using saved sheet endpoint.", "success");
+}
+
+async function saveSheetSettings() {
+  const googleSheetWebAppUrl = sheetUrlInputEl.value.trim();
+  const adminPassword = settingsPasswordInputEl.value;
+
+  saveSheetUrlButtonEl.disabled = true;
+  setSettingsStatus("Saving...", "neutral");
+
+  try {
+    const response = await sendRuntimeMessage({
+      type: "saveSheetSettings",
+      googleSheetWebAppUrl,
+      adminPassword
+    });
+
+    if (!response?.ok) {
+      setSettingsStatus(response?.error || "Could not save sheet settings.", "error");
+      return;
+    }
+
+    sheetUrlInputEl.value = response.googleSheetWebAppUrl;
+    settingsPasswordInputEl.value = "";
+    setSettingsStatus("Saved. Pending entries will retry with this URL.", "success");
+    await loadSubmissionList();
+  } catch (error) {
+    setSettingsStatus(error instanceof Error ? error.message : "Could not save sheet settings.", "error");
+  } finally {
+    saveSheetUrlButtonEl.disabled = false;
+  }
+}
+
 async function loadSubmissionList() {
+  if (globalThis.chrome?.runtime?.sendMessage) {
+    sendRuntimeMessage({
+      type: "syncPendingSubmissions"
+    }).catch((error) => {
+      console.warn("Prescription Submit Capture: failed to recheck pending submissions.", error);
+    });
+  }
+
   const stored = popupStorage
     ? await popupStorage.get(["submissionHistory"])
     : readPopupFallback();
@@ -106,6 +175,16 @@ async function loadSubmissionList() {
 
   renderSubmissionList(submissionHistory);
 }
+
+saveSheetUrlButtonEl.addEventListener("click", () => {
+  void saveSheetSettings();
+});
+
+sheetUrlInputEl.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    void saveSheetSettings();
+  }
+});
 
 if (popupStorage && globalThis.chrome?.storage?.onChanged) {
   globalThis.chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -119,4 +198,5 @@ if (popupStorage && globalThis.chrome?.storage?.onChanged) {
   });
 }
 
+loadSheetSettings();
 loadSubmissionList();

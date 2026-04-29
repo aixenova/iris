@@ -13,6 +13,23 @@
         <h1>Saved Patients</h1>
         <p id="status" class="status">Waiting for the first captured submit...</p>
       </div>
+      <details class="settings-card">
+        <summary class="settings-summary">Settings</summary>
+        <div class="settings-body">
+          <p class="settings-warning">
+            Changing this URL can stop sheet sync for all new submissions. Update only after testing
+            the Apps Script web app.
+          </p>
+          <label class="settings-label" for="sheetUrlInput">Google Sheet Web App URL</label>
+          <input id="sheetUrlInput" class="settings-input" type="url" spellcheck="false" />
+          <label class="settings-label" for="settingsPasswordInput">Admin Password</label>
+          <div class="settings-row">
+            <input id="settingsPasswordInput" class="settings-input" type="password" />
+            <button id="saveSheetUrlButton" class="settings-button" type="button">Save</button>
+          </div>
+          <p id="settingsStatus" class="settings-status"></p>
+        </div>
+      </details>
       <section class="card">
         <div class="meta" id="meta"></div>
         <p id="emptyState" class="empty-state">
