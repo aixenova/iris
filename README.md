@@ -46,17 +46,25 @@ For the two-sheet follow-up sync, keep:
 ### 2. Add the Apps Script
 
 1. In the sheet, open `Extensions` -> `Apps Script`
-2. Replace the default code with this:
+2. Replace the default code with the script below
+3. Replace `PASTE_GOOGLE_SHEET_ID_HERE` with the ID from your Google Sheet URL
+4. Optional: set `FOLLOWUP_EMAIL_RECIPIENTS` to a comma-separated recipient list for automatic CSV email; leave it blank to skip email
+
+Example sheet URL:
+
+`https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit`
+
+Use only `YOUR_SHEET_ID` in `SPREADSHEET_ID`.
 
 ```javascript
-const SPREADSHEET_ID = "1YKdgpu5w5SK_CxIZlHYx3hufCUp5wym7cvsvTZpTvVM";
+const SPREADSHEET_ID = "PASTE_GOOGLE_SHEET_ID_HERE";
 const EXTENSION_SHEET_NAME = "Extension data";
 const PATIENT_SHEET_NAME = "All Contacts";
 const TOMORROW_FOLLOWUPS_SHEET_NAME = "Tomorrow Follow-ups";
 const SCHEDULED_SYNC_FUNCTION_NAME = "scheduledSyncAllRows";
 const SCHEDULED_TOMORROW_FOLLOWUPS_FUNCTION_NAME = "scheduledRefreshTomorrowFollowUps";
 const TIMEZONE = "Asia/Kolkata";
-const FOLLOWUP_EMAIL_RECIPIENTS = "ayush@atman.care";
+const FOLLOWUP_EMAIL_RECIPIENTS = "";
 
 const EXTENSION_COLUMNS = {
   patientId: 1,
@@ -850,7 +858,7 @@ Important: if you edit the Apps Script later, use `Deploy` -> `Manage deployment
 
 ### 4. Configure the web app URL in the extension
 
-The extension includes a default Google Sheet web app URL, and you can override it from the popup without editing code.
+The extension includes a placeholder default Google Sheet web app URL. For local use, either replace `PASTE_DEPLOYMENT_ID_HERE` in `background.js`, or set the deployed URL from the popup settings.
 
 1. Click the extension icon
 2. Open `Settings`

@@ -1,11 +1,11 @@
-const SPREADSHEET_ID = "1YKdgpu5w5SK_CxIZlHYx3hufCUp5wym7cvsvTZpTvVM";
+const SPREADSHEET_ID = "PASTE_GOOGLE_SHEET_ID_HERE";
 const EXTENSION_SHEET_NAME = "Extension data";
 const PATIENT_SHEET_NAME = "All Contacts";
 const TOMORROW_FOLLOWUPS_SHEET_NAME = "Tomorrow Follow-ups";
 const SCHEDULED_SYNC_FUNCTION_NAME = "scheduledSyncAllRows";
 const SCHEDULED_TOMORROW_FOLLOWUPS_FUNCTION_NAME = "scheduledRefreshTomorrowFollowUps";
 const TIMEZONE = "Asia/Kolkata";
-const FOLLOWUP_EMAIL_RECIPIENTS = "ayush@atman.care";
+const FOLLOWUP_EMAIL_RECIPIENTS = "";
 
 const EXTENSION_COLUMNS = {
   patientId: 1,
