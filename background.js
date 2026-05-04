@@ -1,5 +1,5 @@
 const DEFAULT_GOOGLE_SHEET_WEB_APP_URL =
-  "https://script.google.com/macros/s/AKfycbyUO9-xKjzlkIcqaeyfhZE9-QHetPg-jpgGV5Zz3STB6ej2ExF7d7NKRc95tt9X2gnowQ/exec";
+  "https://script.google.com/macros/s/AKfycbzsO-hrrFVEWREpxp_vqHuzVIs9C1whsTb4MRoNZsDCbyY__1ZDoxLbUWwqJekmllG-BQ/exec";
 const STORAGE_KEYS = ["submissionHistory", "googleSheetWebAppUrl"];
 const MAX_HISTORY_SIZE = 50;
 const MAX_SHEET_SYNC_ATTEMPTS = 5;
@@ -152,6 +152,95 @@ async function appendSubmissionToSheet(payload) {
   }
 
   return parsedResponse;
+}
+
+async function requestSheetAction(action) {
+  const webAppUrl = await getConfiguredSheetUrl();
+
+  if (!webAppUrl) {
+    throw new Error("Google Sheet web app URL is not configured.");
+  }
+
+  if (!webAppUrl.startsWith("https://script.google.com/macros/s/")) {
+    throw new Error("Google Sheet web app URL must be a deployed Apps Script web app URL.");
+  }
+
+  const requestUrl = new URL(webAppUrl);
+  requestUrl.searchParams.set("action", action);
+
+  const response = await fetch(requestUrl.toString(), {
+    method: "GET"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheet request failed with status ${response.status}`);
+  }
+
+  const rawResponse = await response.text();
+
+  if (!rawResponse) {
+    return { ok: true };
+  }
+
+  let parsedResponse;
+
+  try {
+    parsedResponse = JSON.parse(rawResponse);
+  } catch (error) {
+    throw new Error("Google Sheet response was not valid JSON.");
+  }
+
+  if (parsedResponse.ok === false) {
+    throw new Error(parsedResponse.error || "Google Sheet script returned an error.");
+  }
+
+  return parsedResponse;
+}
+
+async function requestSheetTextAction(action) {
+  const webAppUrl = await getConfiguredSheetUrl();
+
+  if (!webAppUrl) {
+    throw new Error("Google Sheet web app URL is not configured.");
+  }
+
+  if (!webAppUrl.startsWith("https://script.google.com/macros/s/")) {
+    throw new Error("Google Sheet web app URL must be a deployed Apps Script web app URL.");
+  }
+
+  const requestUrl = new URL(webAppUrl);
+  requestUrl.searchParams.set("action", action);
+
+  const response = await fetch(requestUrl.toString(), {
+    method: "GET"
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Sheet request failed with status ${response.status}`);
+  }
+
+  return response.text();
+}
+
+function getTomorrowFileDate() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().slice(0, 10);
+}
+
+async function downloadTomorrowFollowUpsCsv() {
+  if (!globalThis.chrome?.downloads?.download) {
+    throw new Error("Chrome downloads permission is unavailable.");
+  }
+
+  const csv = await requestSheetTextAction("exportTomorrowFollowUpsCsv");
+  const dataUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
+
+  return globalThis.chrome.downloads.download({
+    url: dataUrl,
+    filename: `tomorrow-follow-ups-${getTomorrowFileDate()}.csv`,
+    saveAs: true
+  });
 }
 
 async function handleCapturedSubmission(payload) {
@@ -317,6 +406,51 @@ globalThis.chrome.runtime.onMessage.addListener((message, _sender, sendResponse)
         sendResponse({
           ok: false,
           error: error instanceof Error ? error.message : "Unknown capture error."
+        });
+      });
+
+    return true;
+  }
+
+  if (message?.type === "syncAllSheetRows") {
+    requestSheetAction("syncAllRows")
+      .then((response) => {
+        sendResponse({ ok: true, response });
+      })
+      .catch((error) => {
+        sendResponse({
+          ok: false,
+          error: error instanceof Error ? error.message : "Unknown sheet sync error."
+        });
+      });
+
+    return true;
+  }
+
+  if (message?.type === "refreshTomorrowFollowUps") {
+    requestSheetAction("refreshTomorrowFollowUps")
+      .then((response) => {
+        sendResponse({ ok: true, response });
+      })
+      .catch((error) => {
+        sendResponse({
+          ok: false,
+          error: error instanceof Error ? error.message : "Unknown tomorrow follow-up error."
+        });
+      });
+
+    return true;
+  }
+
+  if (message?.type === "downloadTomorrowFollowUpsCsv") {
+    downloadTomorrowFollowUpsCsv()
+      .then((downloadId) => {
+        sendResponse({ ok: true, downloadId });
+      })
+      .catch((error) => {
+        sendResponse({
+          ok: false,
+          error: error instanceof Error ? error.message : "Unknown download error."
         });
       });
 

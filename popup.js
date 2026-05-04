@@ -6,6 +6,10 @@ const sheetUrlInputEl = document.getElementById("sheetUrlInput");
 const settingsPasswordInputEl = document.getElementById("settingsPasswordInput");
 const saveSheetUrlButtonEl = document.getElementById("saveSheetUrlButton");
 const settingsStatusEl = document.getElementById("settingsStatus");
+const syncAllRowsButtonEl = document.getElementById("syncAllRowsButton");
+const refreshTomorrowButtonEl = document.getElementById("refreshTomorrowButton");
+const downloadTomorrowButtonEl = document.getElementById("downloadTomorrowButton");
+const bulkSyncStatusEl = document.getElementById("bulkSyncStatus");
 const popupStorage =
   typeof globalThis.chrome !== "undefined" ? globalThis.chrome?.storage?.local ?? null : null;
 
@@ -107,6 +111,11 @@ function setSettingsStatus(message, status = "neutral") {
   settingsStatusEl.dataset.status = status;
 }
 
+function setBulkSyncStatus(message, status = "neutral") {
+  bulkSyncStatusEl.textContent = message;
+  bulkSyncStatusEl.dataset.status = status;
+}
+
 async function sendRuntimeMessage(message) {
   if (!globalThis.chrome?.runtime?.sendMessage) {
     return { ok: false, error: "Chrome runtime messaging is unavailable." };
@@ -159,6 +168,86 @@ async function saveSheetSettings() {
   }
 }
 
+async function syncAllRows() {
+  syncAllRowsButtonEl.disabled = true;
+  setBulkSyncStatus("Syncing Extension data into All Contacts...", "neutral");
+
+  try {
+    const response = await sendRuntimeMessage({
+      type: "syncAllSheetRows"
+    });
+
+    if (!response?.ok) {
+      setBulkSyncStatus(response?.error || "Could not sync all rows.", "error");
+      return;
+    }
+
+    const syncResponse = response.response || {};
+    setBulkSyncStatus(
+      `Synced ${syncResponse.matchedRows || 0} row(s). ${syncResponse.unmatchedRows || 0} unmatched.`,
+      "success"
+    );
+  } catch (error) {
+    setBulkSyncStatus(error instanceof Error ? error.message : "Could not sync all rows.", "error");
+  } finally {
+    syncAllRowsButtonEl.disabled = false;
+  }
+}
+
+async function refreshTomorrowFollowUps() {
+  refreshTomorrowButtonEl.disabled = true;
+  setBulkSyncStatus("Refreshing Tomorrow Follow-ups...", "neutral");
+
+  try {
+    const response = await sendRuntimeMessage({
+      type: "refreshTomorrowFollowUps"
+    });
+
+    if (!response?.ok) {
+      setBulkSyncStatus(response?.error || "Could not refresh tomorrow follow-ups.", "error");
+      return;
+    }
+
+    const followUps = response.response?.followUps || {};
+    setBulkSyncStatus(
+      `Tomorrow Follow-ups ready: ${followUps.rowCount || 0} row(s).`,
+      "success"
+    );
+  } catch (error) {
+    setBulkSyncStatus(
+      error instanceof Error ? error.message : "Could not refresh tomorrow follow-ups.",
+      "error"
+    );
+  } finally {
+    refreshTomorrowButtonEl.disabled = false;
+  }
+}
+
+async function downloadTomorrowFollowUps() {
+  downloadTomorrowButtonEl.disabled = true;
+  setBulkSyncStatus("Preparing Excel CSV download...", "neutral");
+
+  try {
+    const response = await sendRuntimeMessage({
+      type: "downloadTomorrowFollowUpsCsv"
+    });
+
+    if (!response?.ok) {
+      setBulkSyncStatus(response?.error || "Could not download tomorrow follow-ups.", "error");
+      return;
+    }
+
+    setBulkSyncStatus("Download started.", "success");
+  } catch (error) {
+    setBulkSyncStatus(
+      error instanceof Error ? error.message : "Could not download tomorrow follow-ups.",
+      "error"
+    );
+  } finally {
+    downloadTomorrowButtonEl.disabled = false;
+  }
+}
+
 async function loadSubmissionList() {
   if (globalThis.chrome?.runtime?.sendMessage) {
     sendRuntimeMessage({
@@ -178,6 +267,18 @@ async function loadSubmissionList() {
 
 saveSheetUrlButtonEl.addEventListener("click", () => {
   void saveSheetSettings();
+});
+
+syncAllRowsButtonEl.addEventListener("click", () => {
+  void syncAllRows();
+});
+
+refreshTomorrowButtonEl.addEventListener("click", () => {
+  void refreshTomorrowFollowUps();
+});
+
+downloadTomorrowButtonEl.addEventListener("click", () => {
+  void downloadTomorrowFollowUps();
 });
 
 sheetUrlInputEl.addEventListener("keydown", (event) => {

@@ -3,7 +3,7 @@
   "name": "Prescription Submit Capture",
   "version": "1.0.0",
   "description": "Stores submit values from the page and shows the latest captured payload.",
-  "permissions": ["storage", "alarms"],
+  "permissions": ["storage", "alarms", "downloads"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"

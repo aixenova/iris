@@ -56,6 +56,49 @@ h1 {
   background: rgba(255, 255, 255, 0.74);
 }
 
+.sync-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  border: 1px solid rgba(29, 42, 34, 0.12);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.sync-card .sync-button {
+  width: 100%;
+}
+
+.sync-title {
+  margin: 0 0 4px;
+  color: #1d2a22;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.sync-status {
+  min-height: 16px;
+  margin: 0;
+  color: #55695c;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.sync-status[data-status="success"] {
+  color: #2d6c47;
+}
+
+.sync-status[data-status="error"] {
+  color: #8c2d2d;
+}
+
+.sync-button {
+  white-space: nowrap;
+}
+
 .settings-summary {
   cursor: pointer;
   padding: 11px 12px;
