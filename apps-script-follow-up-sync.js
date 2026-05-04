@@ -1,4 +1,4 @@
-const SPREADSHEET_ID = "PASTE_GOOGLE_SHEET_ID_HERE";
+const SPREADSHEET_ID = "1YKdgpu5w5SK_CxIZlHYx3hufCUp5wym7cvsvTZpTvVM";
 const EXTENSION_SHEET_NAME = "Extension data";
 const PATIENT_SHEET_NAME = "All Contacts";
 const TOMORROW_FOLLOWUPS_SHEET_NAME = "Tomorrow Follow-ups";

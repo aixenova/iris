@@ -1,5 +1,5 @@
 const DEFAULT_GOOGLE_SHEET_WEB_APP_URL =
-  "https://script.google.com/macros/s/PASTE_DEPLOYMENT_ID_HERE/exec";
+  "https://script.google.com/macros/s/AKfycbzsO-hrrFVEWREpxp_vqHuzVIs9C1whsTb4MRoNZsDCbyY__1ZDoxLbUWwqJekmllG-BQ/exec";
 const STORAGE_KEYS = ["submissionHistory", "googleSheetWebAppUrl"];
 const MAX_HISTORY_SIZE = 50;
 const MAX_SHEET_SYNC_ATTEMPTS = 5;
